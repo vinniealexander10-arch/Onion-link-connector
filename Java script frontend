@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnionLink WebApp</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>OnionLink WebApp</h1>
+
+<div>
+  <button onclick="apiCall('tor/start')">Start Tor</button>
+  <button onclick="apiCall('tor/stop')">Stop Tor</button>
+  <button onclick="apiCall('tor/new-identity')">New Tor Identity</button>
+  <button onclick="apiCall('vpn/connect')">Connect VPN</button>
+  <button onclick="apiCall('vpn/disconnect')">Disconnect VPN</button>
+  <button onclick="newProfile()">New Profile</button>
+  <button onclick="apiCall('profiles/reset')">Reset Profile</button>
+</div>
+
+<h2>DuckDuckGo Search</h2>
+<input type="text" id="searchQuery" placeholder="Search DuckDuckGo">
+<button onclick="duckSearch()">Search</button>
+
+<pre id="status">Loading status...</pre>
+
+<script src="script.js"></script>
+</body>
+</html>
