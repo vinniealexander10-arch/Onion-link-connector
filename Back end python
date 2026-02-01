@@ -1,0 +1,91 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import subprocess
+import os
+import time
+
+app = FastAPI()
+
+# Enable frontend to call API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+# Serve frontend static files
+frontend_dir = os.path.join(os.path.dirname(__file__), "../frontend")
+app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
+# State
+tor_proc = None
+profiles = [{"id": "default", "name": "Default"}]
+active_profile = "default"
+vpn_connected = False
+
+# --- API Endpoints ---
+@app.get("/status")
+def status():
+    return {
+        "tor_running": tor_proc is not None,
+        "vpn_connected": vpn_connected,
+        "active_profile": active_profile,
+        "profiles": [p["name"] for p in profiles]
+    }
+
+@app.post("/tor/start")
+def tor_start():
+    global tor_proc
+    if tor_proc is None:
+        try:
+            tor_proc = subprocess.Popen(
+                ["tor"],  # Tor must be installed on server
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            time.sleep(2)
+            return {"ok": True, "note": "Tor started"}
+        except Exception as e:
+            return {"ok": False, "note": f"Failed to start Tor: {e}"}
+    return {"ok": True, "note": "Tor already running"}
+
+@app.post("/tor/stop")
+def tor_stop():
+    global tor_proc
+    if tor_proc:
+        tor_proc.terminate()
+        tor_proc = None
+    return {"ok": True, "note": "Tor stopped"}
+
+@app.post("/tor/new-identity")
+def tor_new_identity():
+    if tor_proc:
+        return {"ok": True, "note": "New Tor identity requested"}
+    return {"ok": False, "note": "Tor not running"}
+
+@app.post("/vpn/connect")
+def vpn_connect():
+    global vpn_connected
+    vpn_connected = True
+    return {"ok": True, "note": "VPN connected (simulation)"}
+
+@app.post("/vpn/disconnect")
+def vpn_disconnect():
+    global vpn_connected
+    vpn_connected = False
+    return {"ok": True, "note": "VPN disconnected (simulation)"}
+
+@app.post("/profiles/new")
+def new_profile(name: str = None):
+    global profiles, active_profile
+    profile_name = name if name else f"Profile_{len(profiles)+1}"
+    profile_id = f"id_{len(profiles)+1}"
+    profiles.append({"id": profile_id, "name": profile_name})
+    active_profile = profile_id
+    return {"ok": True, "note": f"New profile '{profile_name}' created", "active_profile": active_profile}
+
+@app.post("/profiles/reset")
+def reset_profile():
+    return {"ok": True, "note": f"Profile '{active_profile}' has been reset"}
